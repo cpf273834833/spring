@@ -344,7 +344,8 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		Set<ConfigurationClass> alreadyParsed = new HashSet<>(configCandidates.size());
 		do {
 			/**
-			 * 	解析配置类
+			 * 	解析配置类及普通类，
+			 * 	对于 Import 的类放进 Map<ConfigurationClass, ConfigurationClass> configurationClasses
 			 */
 			parser.parse(candidates);
 			// 校验
@@ -359,6 +360,8 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 						registry, this.sourceExtractor, this.resourceLoader, this.environment,
 						this.importBeanNameGenerator, parser.getImportRegistry());
 			}
+			// 处理 Import 普通类 ImportBeanDefinitionRegistrar 的注册
+			// selector 最终会递归成普通类
 			this.reader.loadBeanDefinitions(configClasses);
 			alreadyParsed.addAll(configClasses);
 

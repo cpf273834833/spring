@@ -200,6 +200,7 @@ class ConfigurationClassParser {
 	}
 
 	protected final void parse(AnnotationMetadata metadata, String beanName) throws IOException {
+		// 解析一个配置类
 		processConfigurationClass(new ConfigurationClass(metadata, beanName));
 	}
 
@@ -218,6 +219,13 @@ class ConfigurationClassParser {
 	}
 
 
+	/**
+	 * 解析类
+	 * 第一次解析的是配置类，
+	 * 然后通过解析配置类的注解来继续递归调用此方法
+	 * @param configClass
+	 * @throws IOException
+	 */
 	protected void processConfigurationClass(ConfigurationClass configClass) throws IOException {
 		// 判断是否需要跳过解析
 		if (this.conditionEvaluator.shouldSkip(configClass.getMetadata(), ConfigurationPhase.PARSE_CONFIGURATION)) {
@@ -248,7 +256,7 @@ class ConfigurationClassParser {
 			sourceClass = doProcessConfigurationClass(configClass, sourceClass);
 		}
 		while (sourceClass != null);
-
+		//
 		this.configurationClasses.put(configClass, configClass);
 	}
 
@@ -314,6 +322,12 @@ class ConfigurationClassParser {
 						bdCand = holder.getBeanDefinition();
 					}
 					// 如果加了 @Configuration 继续递归 继续调用此方法 doProcessConfigurationClass
+					/**
+					 *  判断有没有加 @Configuration  （Full）
+					 *  或者 @Component @ComponentScan @Import @ImportResource 	(LITE)
+					 *  如果是打好标记
+					 *  然后递归执行 解析类方法 doProcessConfigurationClass
+					 */
 					if (ConfigurationClassUtils.checkConfigurationClassCandidate(bdCand, this.metadataReaderFactory)) {
 						parse(bdCand.getBeanClassName(), holder.getBeanName());
 					}
