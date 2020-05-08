@@ -243,12 +243,16 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			@Nullable final Object[] args, boolean typeCheckOnly) throws BeansException {
 
 		/**
-		 * 验证beanName
+		 * 验证beanName 处理 &
 		 */
 		final String beanName = transformedBeanName(name);
 		Object bean;
 
 		// Eagerly check singleton cache for manually registered singletons.
+		/**
+		 * 先拿，看有没有
+		 * singleton缓存中找bean实例，应该是拿不到的，因为我们是第一次初始化，缓存中肯定不存在。
+		 */
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
 			if (logger.isTraceEnabled()) {
@@ -260,6 +264,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					logger.trace("Returning cached instance of singleton bean '" + beanName + "'");
 				}
 			}
+			// 不为空直接拿出来
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
 
@@ -274,6 +279,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 
 			// Check if bean definition exists in this factory.
+			/**
+			 * 这段是根据当前的beanfactory获取父一级的beanfactory，然后逐级递归的查找我们需要的bean，
+			 * 很显然在这里依然获取不到我们的bean，原因同第一部分。
+			 */
 			BeanFactory parentBeanFactory = getParentBeanFactory();
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
@@ -296,6 +305,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 
 			if (!typeCheckOnly) {
+				/**
+				 * 把需要创建的bean打好标记
+				 * 我们创建bean之前就打好标记了，避免其他来创建的线程重复创建
+				 * 方法内部是同步的
+				 */
 				markBeanAsCreated(beanName);
 			}
 
@@ -303,6 +317,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				final RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
 				checkMergedBeanDefinition(mbd, beanName, args);
 
+				/**
+				 * 处理 depends on
+				 */
 				// Guarantee initialization of beans that the current bean depends on.
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {

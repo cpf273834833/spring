@@ -253,6 +253,9 @@ class ConfigurationClassParser {
 		// Recursively process the configuration class and its superclass hierarchy.
 		SourceClass sourceClass = asSourceClass(configClass);
 		do {
+			/**
+			 * 扫描
+			 */
 			sourceClass = doProcessConfigurationClass(configClass, sourceClass);
 		}
 		while (sourceClass != null);
@@ -358,7 +361,7 @@ class ConfigurationClassParser {
 			configClass.addBeanMethod(new BeanMethod(methodMetadata, configClass));
 		}
 
-		// Process default methods on interfaces
+		// Process default methords on interfaces
 		processInterfaces(configClass, sourceClass);
 
 		// Process superclass, if any

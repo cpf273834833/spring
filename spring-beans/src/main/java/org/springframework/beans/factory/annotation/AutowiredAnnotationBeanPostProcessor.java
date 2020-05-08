@@ -256,6 +256,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 	public Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, final String beanName)
 			throws BeanCreationException {
 
+		// 我们的lookup就是在这边通过反射发现的（其他的xml形式的replace-method和lookup在BeanDefinitionParserDelegate中）
 		// Let's check for lookup methods here...
 		if (!this.lookupMethodsChecked.contains(beanName)) {
 			if (AnnotationUtils.isCandidateClass(beanClass, Lookup.class)) {
@@ -290,15 +291,18 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 			this.lookupMethodsChecked.add(beanName);
 		}
 
+		// 缓存中获取 构造函数
 		// Quick check on the concurrent map first, with minimal locking.
 		Constructor<?>[] candidateConstructors = this.candidateConstructorsCache.get(beanClass);
 		if (candidateConstructors == null) {
+			// 双重检测
 			// Fully synchronized resolution now...
 			synchronized (this.candidateConstructorsCache) {
 				candidateConstructors = this.candidateConstructorsCache.get(beanClass);
 				if (candidateConstructors == null) {
 					Constructor<?>[] rawCandidates;
 					try {
+						// 获取构造函数
 						rawCandidates = beanClass.getDeclaredConstructors();
 					}
 					catch (Throwable ex) {
@@ -318,11 +322,17 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 						else if (primaryConstructor != null) {
 							continue;
 						}
+						// 寻找构造上是否存在@Autowired，@Value，@Inject，如果存在就返回required=true，一个bean的构造函数如果超过一个@Autowired就抛出异常
 						MergedAnnotation<?> ann = findAutowiredAnnotation(candidate);
+
+						// 如果没有
 						if (ann == null) {
+							// 获取 class
 							Class<?> userClass = ClassUtils.getUserClass(beanClass);
+							// 如果 当前class 不是要解析的beanClass
 							if (userClass != beanClass) {
 								try {
+									// 获取父类构造方法
 									Constructor<?> superCtor =
 											userClass.getDeclaredConstructor(candidate.getParameterTypes());
 									ann = findAutowiredAnnotation(superCtor);

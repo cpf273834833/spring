@@ -40,6 +40,8 @@ import org.springframework.core.Ordered;
 import org.springframework.core.PriorityOrdered;
 import org.springframework.lang.Nullable;
 
+import javax.annotation.PostConstruct;
+
 /**
  * Delegate for AbstractApplicationContext's post-processor handling.
  *
@@ -302,12 +304,24 @@ final class PostProcessorRegistrationDelegate {
 
 	public static void registerBeanPostProcessors(
 			ConfigurableListableBeanFactory beanFactory, AbstractApplicationContext applicationContext) {
-
+		/**
+		 * 	从bdMap 中找到 BeanPostProcessor
+		 *	在this() 里面 初始化读取器的时候注册了5个bd，其中一个是 ConfigurationClassPostProcessor（BeanFactoryPostProcessor类型）
+		 *  	还有两个 BeanPostProcessor 类型的bd  AutowiredAnnotationBeanPostProcessor  CommonAnnotationBeanPostProcessor
+		 */
 		String[] postProcessorNames = beanFactory.getBeanNamesForType(BeanPostProcessor.class, true, false);
 
 		// Register BeanPostProcessorChecker that logs an info message when
 		// a bean is created during BeanPostProcessor instantiation, i.e. when
 		// a bean is not eligible for getting processed by all BeanPostProcessors.
+		/**
+		 *  3+1+2 = 6
+		 * beanFactory.getBeanPostProcessorCount() 有3个
+		 * 		refresh() -> prepareBeanFactory() -> beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
+		 * 		refresh() -> prepareBeanFactory() -> beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(this));
+		 * 		refresh() -> invokeBeanFactoryPostProcessors() 执行ConfigurationClassPostProcessor 的父类方法 postProcessBeanFactory() 中
+		 * 				 	beanFactory.addBeanPostProcessor(new ImportAwareBeanPostProcessor(beanFactory));
+		 */
 		int beanProcessorTargetCount = beanFactory.getBeanPostProcessorCount() + 1 + postProcessorNames.length;
 		beanFactory.addBeanPostProcessor(new BeanPostProcessorChecker(beanFactory, beanProcessorTargetCount));
 
@@ -335,6 +349,10 @@ final class PostProcessorRegistrationDelegate {
 
 		// First, register the BeanPostProcessors that implement PriorityOrdered.
 		sortPostProcessors(priorityOrderedPostProcessors, beanFactory);
+		/**
+		 * 注册BeanPostProcessor
+		 * 		本质就是：beanFactory 里面 beanPostProcessors 集合里面 add 一个 beanPostProcessor
+		 */
 		registerBeanPostProcessors(beanFactory, priorityOrderedPostProcessors);
 
 		// Next, register the BeanPostProcessors that implement Ordered.
@@ -366,6 +384,16 @@ final class PostProcessorRegistrationDelegate {
 
 		// Re-register post-processor for detecting inner beans as ApplicationListeners,
 		// moving it to the end of the processor chain (for picking up proxies etc).
+		/**
+		 * 注册一个beanPostProcessor
+		 * 		到此为止一共有6个 BeanPostProcessor
+		 * 			AutowiredAnnotationBeanPostProcessor  处理 byType byName
+		 * 			CommonAnnotationBeanPostProcessor  处理 @PostConstruct
+		 * 			ApplicationContextAwareProcessor  拿到上下文
+		 * 			ApplicationListenerDetector
+		 * 			ImportAwareBeanPostProcessor  拿到类上的注解
+		 * 			BeanPostProcessorChecker  检查有没有执行 BeanPostProcessor
+		 */
 		beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(applicationContext));
 	}
 

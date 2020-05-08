@@ -543,27 +543,39 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				postProcessBeanFactory(beanFactory);
 
 				/**
-				 * 执行自定义的 BeanFactoryProcessor 和内置的 BeanFactoryProcessor
+				 * 执行自定义的 BeanFactoryPostProcessor 和内置的 BeanFactoryPostProcessor 后置处理器
 				 * 并完成包扫描
 				 */
 				// Invoke factory processors registered as beans in the context.
 				invokeBeanFactoryPostProcessors(beanFactory);
 
+				/**
+				 * 注册BeanPostProcessor
+				 */
 				// Register bean processors that intercept bean creation.
 				registerBeanPostProcessors(beanFactory);
 
+				/**
+				 * 国际化
+				 */
 				// Initialize message source for this context.
 				initMessageSource();
 
 				// Initialize event multicaster for this context.
 				initApplicationEventMulticaster();
 
+				/**
+				 * 空方法
+				 */
 				// Initialize other special beans in specific context subclasses.
 				onRefresh();
 
 				// Check for listener beans and register them.
 				registerListeners();
 
+				/**
+				 * 创建所有非懒加载的单例类
+				 */
 				// Instantiate all remaining (non-lazy-init) singletons.
 				finishBeanFactoryInitialization(beanFactory);
 
@@ -764,7 +776,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory) {
 
 		/**
-		 *	主要用来执行 后置处理器
+		 * 	主要用来执行 后置处理器
 		 * 		getBeanFactoryPostProcessors() 拿到自定义的 List<BeanFactoryPostProcessor>
 		 * 		 如果我们手动 refresh() 在这之前我们可以调用 context.addBeanFactoryPostProcessor(XXX);
 		 */
@@ -923,11 +935,13 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// Register a default embedded value resolver if no bean post-processor
 		// (such as a PropertyPlaceholderConfigurer bean) registered any before:
 		// at this point, primarily for resolution in annotation attribute values.
+		// 有没有value内置转换器
 		if (!beanFactory.hasEmbeddedValueResolver()) {
 			beanFactory.addEmbeddedValueResolver(strVal -> getEnvironment().resolvePlaceholders(strVal));
 		}
 
 		// Initialize LoadTimeWeaverAware beans early to allow for registering their transformers early.
+		// aspectJ 静态织入
 		String[] weaverAwareNames = beanFactory.getBeanNamesForType(LoadTimeWeaverAware.class, false, false);
 		for (String weaverAwareName : weaverAwareNames) {
 			getBean(weaverAwareName);
